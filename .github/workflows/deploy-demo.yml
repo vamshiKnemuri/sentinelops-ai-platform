@@ -1,0 +1,128 @@
+name: Deploy AWS Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type DEPLOY to create billable AWS resources
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: sentinelops-aws-demo
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: inputs.confirmation == 'DEPLOY'
+    runs-on: ubuntu-latest
+    environment: demo
+    timeout-minutes: 75
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+      BEDROCK_MODEL_ID: ${{ vars.BEDROCK_MODEL_ID }}
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Verify repository variables
+        run: |
+          test -n "${{ vars.AWS_ROLE_ARN }}"
+          test -n "$AWS_REGION"
+          test -n "$TF_STATE_BUCKET"
+          test -n "$BEDROCK_MODEL_ID"
+
+      - name: Authenticate to AWS using OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Restrict EKS API to this runner
+        run: |
+          RUNNER_PUBLIC_IP="$(curl --fail --silent --show-error https://checkip.amazonaws.com)"
+          test -n "$RUNNER_PUBLIC_IP"
+          echo "TF_VAR_cluster_public_access_cidrs=[\"${RUNNER_PUBLIC_IP}/32\"]" >> "$GITHUB_ENV"
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.3"
+          terraform_wrapper: false
+
+      - name: Provision the platform
+        working-directory: infrastructure/terraform
+        run: |
+          terraform init -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="region=$AWS_REGION"
+          terraform plan -out=sentinelops.tfplan \
+            -var="aws_region=$AWS_REGION" \
+            -var="github_repository=$GITHUB_REPOSITORY" \
+            -var="bedrock_model_id=$BEDROCK_MODEL_ID"
+          terraform apply -auto-approve sentinelops.tfplan
+
+      - name: Capture platform outputs
+        id: infra
+        working-directory: infrastructure/terraform
+        run: |
+          echo "cluster=$(terraform output -raw cluster_name)" >> "$GITHUB_OUTPUT"
+          echo "ecr=$(terraform output -raw ecr_repository_url)" >> "$GITHUB_OUTPUT"
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push immutable image
+        env:
+          ECR_REPOSITORY: ${{ steps.infra.outputs.ecr }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build --label "org.opencontainers.image.revision=$IMAGE_TAG" -t "$ECR_REPOSITORY:$IMAGE_TAG" .
+          docker push "$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: Configure Kubernetes access
+        run: aws eks update-kubeconfig --name "${{ steps.infra.outputs.cluster }}" --region "$AWS_REGION"
+
+      - uses: azure/setup-helm@v4.3.1
+
+      - name: Install platform dependencies
+        run: |
+          helm repo add argo https://argoproj.github.io/argo-helm
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+          helm upgrade --install argocd argo/argo-cd \
+            --namespace argocd --create-namespace --wait --timeout 10m
+          helm upgrade --install metrics-server metrics-server/metrics-server \
+            --namespace kube-system --wait --timeout 5m
+          GRAFANA_PASSWORD="$(openssl rand -base64 24)"
+          echo "::add-mask::$GRAFANA_PASSWORD"
+          helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+            --namespace monitoring --create-namespace \
+            --values observability/kube-prometheus-values.yaml \
+            --set-string grafana.adminPassword="$GRAFANA_PASSWORD" \
+            --wait --timeout 15m
+
+      - name: Register SentinelOps with Argo CD
+        env:
+          GITOPS_REPO_URL: https://github.com/${{ github.repository }}.git
+          IMAGE_REPOSITORY: ${{ steps.infra.outputs.ecr }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: envsubst < gitops/applications/sentinelops.yaml.tpl | kubectl apply -f -
+
+      - name: Verify rollout and AI health
+        run: |
+          kubectl wait --for=condition=Available deployment/sentinelops \
+            --namespace sentinelops --timeout=10m
+          kubectl get pods,services,hpa --namespace sentinelops
+
+      - name: Write deployment summary
+        run: |
+          {
+            echo "## SentinelOps AI deployed"
+            echo ""
+            echo "- Cluster: \`${{ steps.infra.outputs.cluster }}\`"
+            echo "- Model: \`$BEDROCK_MODEL_ID\`"
+            echo "- Image: \`${{ steps.infra.outputs.ecr }}:${{ github.sha }}\`"
+            echo "- Follow \`docs/DEMO.md\`, then run Destroy AWS Demo."
+          } >> "$GITHUB_STEP_SUMMARY"

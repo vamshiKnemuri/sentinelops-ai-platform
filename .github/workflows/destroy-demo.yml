@@ -1,0 +1,62 @@
+name: Destroy AWS Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type DESTROY to remove all SentinelOps demo resources
+        required: true
+        type: string
+      remove_bootstrap:
+        description: Also remove GitHub OIDC and Terraform-state bootstrap
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: sentinelops-aws-demo
+  cancel-in-progress: false
+
+jobs:
+  destroy:
+    if: inputs.confirmation == 'DESTROY'
+    runs-on: ubuntu-latest
+    environment: demo
+    timeout-minutes: 75
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+      BEDROCK_MODEL_ID: ${{ vars.BEDROCK_MODEL_ID }}
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Restrict EKS API to this runner
+        run: |
+          RUNNER_PUBLIC_IP="$(curl --fail --silent --show-error https://checkip.amazonaws.com)"
+          echo "TF_VAR_cluster_public_access_cidrs=[\"${RUNNER_PUBLIC_IP}/32\"]" >> "$GITHUB_ENV"
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.3"
+      - name: Destroy platform
+        working-directory: infrastructure/terraform
+        run: |
+          terraform init -backend-config="bucket=$TF_STATE_BUCKET" -backend-config="region=$AWS_REGION"
+          terraform destroy -auto-approve \
+            -var="aws_region=$AWS_REGION" \
+            -var="github_repository=$GITHUB_REPOSITORY" \
+            -var="bedrock_model_id=$BEDROCK_MODEL_ID"
+      - name: Delete bootstrap stack
+        if: inputs.remove_bootstrap
+        run: |
+          aws s3 rm "s3://$TF_STATE_BUCKET" --recursive
+          aws cloudformation delete-stack --stack-name sentinelops-github-bootstrap
+          aws cloudformation wait stack-delete-complete --stack-name sentinelops-github-bootstrap
+      - run: echo "SentinelOps AWS demo resources were destroyed." >> "$GITHUB_STEP_SUMMARY"
