@@ -1,0 +1,16 @@
+[
+  {
+    "case_id": "crashloop-oom",
+    "alert_file": "examples/alerts/crashloop.json",
+    "expected_runbook": "crashloop.md",
+    "expected_action": "rollback_release",
+    "minimum_confidence": 0.65
+  },
+  {
+    "case_id": "high-latency-saturation",
+    "alert_file": "examples/alerts/high-latency.json",
+    "expected_runbook": "high-latency.md",
+    "expected_action": "scale_deployment",
+    "minimum_confidence": 0.65
+  }
+]

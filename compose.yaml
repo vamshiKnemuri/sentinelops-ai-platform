@@ -1,0 +1,16 @@
+services:
+  sentinelops:
+    build: .
+    environment:
+      SENTINELOPS_LLM_PROVIDER: deterministic
+      SENTINELOPS_KNOWLEDGE_PATH: /app/knowledge/runbooks
+      SENTINELOPS_APPROVAL_SECRET: local-compose-secret-change-me
+    ports:
+      - "8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

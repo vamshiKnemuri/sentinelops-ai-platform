@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sentinelops-ai"
+version = "0.1.0"
+description = "Human-governed AI incident response for Kubernetes platforms"
+requires-python = ">=3.12"
+dependencies = [
+  "boto3>=1.40,<2",
+  "fastapi>=0.116,<1",
+  "mcp>=1.15,<2",
+  "prometheus-client>=0.22,<1",
+  "pydantic>=2.11,<3",
+  "uvicorn[standard]>=0.35,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.28,<1",
+  "pytest>=8.4,<9",
+  "pytest-cov>=6.2,<7",
+  "ruff>=0.12,<1",
+]
+
+[project.scripts]
+sentinelops-api = "sentinelops.api:run"
+sentinelops-mcp = "sentinelops.mcp_server:run"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+ignore = ["S101"]

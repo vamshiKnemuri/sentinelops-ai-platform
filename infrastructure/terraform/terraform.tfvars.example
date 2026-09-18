@@ -1,0 +1,6 @@
+aws_region                    = "us-east-1"
+github_repository             = "YOUR_GITHUB_USERNAME/sentinelops-ai-platform"
+cluster_public_access_cidrs   = ["203.0.113.10/32"]
+bedrock_model_id              = "amazon.nova-lite-v1:0"
+node_instance_types           = ["t3.medium"]
+node_desired_size             = 2

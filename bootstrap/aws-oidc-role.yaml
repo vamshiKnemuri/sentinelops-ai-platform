@@ -1,0 +1,172 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Temporary GitHub OIDC deployment role and encrypted Terraform state for SentinelOps
+
+Parameters:
+  GitHubOwner:
+    Type: String
+    AllowedPattern: "^[A-Za-z0-9_.-]+$"
+  GitHubRepository:
+    Type: String
+    Default: sentinelops-ai-platform
+    AllowedPattern: "^[A-Za-z0-9_.-]+$"
+  GitHubEnvironment:
+    Type: String
+    Default: demo
+  DeployRoleName:
+    Type: String
+    Default: SentinelOpsGitHubDeployRole
+
+Resources:
+  GitHubOIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList: [sts.amazonaws.com]
+      ThumbprintList: [6938fd4d98bab03faadb97b34396831e3780aea1]
+      Tags:
+        - Key: Project
+          Value: SentinelOps
+        - Key: AutoDestroy
+          Value: "true"
+
+  TerraformStateKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: SentinelOps Terraform state encryption
+      EnableKeyRotation: true
+      PendingWindowInDays: 7
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: EnableAccountPermissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: "*"
+      Tags:
+        - Key: Project
+          Value: SentinelOps
+        - Key: AutoDestroy
+          Value: "true"
+
+  TerraformStateKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/sentinelops-terraform-state
+      TargetKeyId: !Ref TerraformStateKey
+
+  TerraformStateBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub sentinelops-tfstate-${AWS::AccountId}-${AWS::Region}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !GetAtt TerraformStateKey.Arn
+            BucketKeyEnabled: true
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      Tags:
+        - Key: Project
+          Value: SentinelOps
+        - Key: AutoDestroy
+          Value: "true"
+
+  TerraformStateBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref TerraformStateBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource:
+              - !GetAtt TerraformStateBucket.Arn
+              - !Sub ${TerraformStateBucket.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+  GitHubDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref DeployRoleName
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOIDCProvider
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOwner}/${GitHubRepository}:environment:${GitHubEnvironment}
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/PowerUserAccess
+      Policies:
+        - PolicyName: SentinelOpsScopedIAM
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ManageProjectRoles
+                Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:GetRole
+                  - iam:TagRole
+                  - iam:UntagRole
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:GetRolePolicy
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:ListAttachedRolePolicies
+                  - iam:ListRolePolicies
+                  - iam:PassRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/sentinelops-*
+              - Sid: ReadIAMPolicies
+                Effect: Allow
+                Action:
+                  - iam:GetPolicy
+                  - iam:GetPolicyVersion
+                  - iam:ListRoles
+                Resource: "*"
+              - Sid: CreateRequiredServiceLinkedRoles
+                Effect: Allow
+                Action: iam:CreateServiceLinkedRole
+                Resource: "*"
+                Condition:
+                  StringEquals:
+                    iam:AWSServiceName:
+                      - eks.amazonaws.com
+                      - eks-nodegroup.amazonaws.com
+                      - autoscaling.amazonaws.com
+      Tags:
+        - Key: Project
+          Value: SentinelOps
+        - Key: AutoDestroy
+          Value: "true"
+
+Outputs:
+  GitHubActionsRoleArn:
+    Value: !GetAtt GitHubDeployRole.Arn
+  TerraformStateBucketName:
+    Value: !Ref TerraformStateBucket
+  AwsRegion:
+    Value: !Ref AWS::Region

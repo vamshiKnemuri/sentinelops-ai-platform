@@ -1,0 +1,21 @@
+grafana:
+  service:
+    type: ClusterIP
+  defaultDashboardsEnabled: true
+
+prometheus:
+  prometheusSpec:
+    retention: 6h
+    retentionSize: 4GB
+    serviceMonitorSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+alertmanager:
+  alertmanagerSpec:
+    retention: 6h

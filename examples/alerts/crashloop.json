@@ -1,0 +1,13 @@
+{
+  "source": "prometheus-alertmanager",
+  "title": "KubePodCrashLooping",
+  "service": "checkout-api",
+  "environment": "production",
+  "severity": "critical",
+  "summary": "checkout-api pods entered CrashLoopBackOff after the latest deployment; previous termination reason is OOMKilled",
+  "labels": {
+    "namespace": "payments",
+    "cluster": "sentinelops-demo",
+    "deployment": "checkout-api"
+  }
+}

@@ -1,0 +1,30 @@
+replicaCount: 2
+
+image:
+  repository: example.invalid/sentinelops
+  tag: latest
+  pullPolicy: IfNotPresent
+
+bedrock:
+  modelId: amazon.nova-lite-v1:0
+  region: us-east-1
+
+service:
+  port: 80
+  targetPort: 8080
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 192Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+serviceMonitor:
+  enabled: true

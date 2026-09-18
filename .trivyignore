@@ -1,0 +1,4 @@
+# GitHub-hosted runners require temporary public EKS API reachability.
+# The deploy workflow restricts access to the active runner's /32 address.
+# Replace with a private runner before production use. Review by 2026-12-31.
+AVD-AWS-0040

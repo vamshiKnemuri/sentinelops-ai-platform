@@ -1,0 +1,12 @@
+{
+  "source": "prometheus-alertmanager",
+  "title": "APIHighLatency",
+  "service": "catalog-api",
+  "environment": "production",
+  "severity": "warning",
+  "summary": "P99 latency exceeded two seconds while CPU throttling and request rate increased",
+  "labels": {
+    "namespace": "storefront",
+    "cluster": "sentinelops-demo"
+  }
+}

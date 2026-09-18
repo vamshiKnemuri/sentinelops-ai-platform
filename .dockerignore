@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+artifacts
+infrastructure
+docs
+tests
+examples
+bootstrap
+observability
+platform
+gitops
