@@ -1,0 +1,33 @@
+name: Engineering improvement
+description: Propose a scoped reliability, security, platform, or AI improvement.
+title: "[Enhancement]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Operational problem
+      description: What failure mode, risk, or engineering gap does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the implementation and affected trust boundaries.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Acceptance evidence
+      description: List the tests, metrics, screenshots, or teardown proof required.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety review
+      options:
+        - label: The change preserves human approval for mutations or explicitly proposes an ADR update.
+          required: true
