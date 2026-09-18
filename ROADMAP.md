@@ -1,0 +1,30 @@
+# Roadmap
+
+This roadmap separates implemented capability from planned engineering work. It is intentionally evidence-driven: an item moves to complete only when code, tests, and reproducible proof are committed.
+
+## Completed for v0.1.0
+
+- Structured incident analysis with cited runbook evidence.
+- Provider-neutral LLM integration and deterministic offline evaluation.
+- Read-only MCP tools with bounded inputs.
+- Policy-gated remediation with human approval, expiration, and replay protection.
+- Hash-chained audit events.
+- EKS reference infrastructure, Helm packaging, Argo CD registration, and guarded deploy/destroy workflows.
+- CI checks covering application behavior, AI safety, containers, Terraform, Helm, and IaC security.
+
+## Next
+
+- Run the short-lived AWS demonstration and publish redacted deployment and teardown evidence.
+- Implement durable DynamoDB incident and approval storage.
+- Store versioned runbooks in S3 with ingestion checksums.
+- Export OpenTelemetry traces and publish a Grafana dashboard.
+- Add fault-injection and recovery-time evaluation scenarios.
+
+## Later
+
+- Private EKS endpoint with self-hosted deployment runners.
+- Slack or ServiceNow approval integration.
+- Multi-account AWS landing-zone deployment.
+- Signed container provenance and admission-policy enforcement.
+
+See the public GitHub issues for acceptance criteria and progress.

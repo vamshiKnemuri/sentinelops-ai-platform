@@ -2,9 +2,24 @@
 
 Human-governed AI incident response for Kubernetes platforms.
 
+[![Continuous Integration](https://github.com/vamshiKnemuri/sentinelops-ai-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/vamshiKnemuri/sentinelops-ai-platform/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 SentinelOps ingests production alerts, retrieves relevant runbooks, gathers read-only evidence through MCP tools, and asks Amazon Bedrock for a structured diagnosis. It never performs a mutating action directly: remediation proposals pass through policy checks, require a short-lived human approval, and produce a tamper-evident audit trail.
 
 This is a senior platform-engineering project rather than a chatbot demo. It combines AI engineering, SRE operations, Kubernetes, security controls, evaluation, observability, infrastructure as code, and controlled teardown.
+
+## Project status
+
+| Capability | Current evidence |
+|---|---|
+| Application and AI safety | Unit tests and golden incident evaluations run in GitHub Actions |
+| Container security | Image build and Trivy vulnerability scan run in GitHub Actions |
+| Platform validation | Terraform validation, Helm linting, and IaC scanning run in GitHub Actions |
+| Local demonstration | Deterministic provider supports a credential-free, reproducible walkthrough |
+| AWS demonstration | Infrastructure and guarded deploy/destroy workflows are implemented; deployment evidence is not yet published |
+
+The repository was publicly released as a portfolio case study. Public commit dates represent the publication and subsequent improvement history. See [CHANGELOG.md](CHANGELOG.md), [ROADMAP.md](ROADMAP.md), and the [architecture decisions](docs/adr/README.md).
 
 ## What it demonstrates
 
