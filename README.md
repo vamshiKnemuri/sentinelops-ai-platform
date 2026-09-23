@@ -5,35 +5,35 @@ Human-governed AI incident response for Kubernetes platforms.
 [![Continuous Integration](https://github.com/vamshiKnemuri/sentinelops-ai-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/vamshiKnemuri/sentinelops-ai-platform/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-SentinelOps ingests production alerts, retrieves relevant runbooks, gathers read-only evidence through MCP tools, and asks Amazon Bedrock for a structured diagnosis. It never performs a mutating action directly: remediation proposals pass through policy checks, require a short-lived human approval, and produce a tamper-evident audit trail.
+SentinelOps ingests production alerts, retrieves relevant runbooks, gathers read-only evidence through MCP tools, and asks Amazon Bedrock for a structured diagnosis. The response contains cited hypotheses, uncertainty, and a bounded next action. It never performs a mutating action directly: remediation proposals pass through policy checks, require a short-lived human approval, and produce a tamper-evident audit trail.
 
-This is a senior platform-engineering project rather than a chatbot demo. It combines AI engineering, SRE operations, Kubernetes, security controls, evaluation, observability, infrastructure as code, and controlled teardown.
+The design keeps the model inside a deterministic control plane. Retrieval, citations, action risk, approval, token replay, and audit integrity are enforced in code rather than delegated to the prompt.
 
 ## Project status
 
 | Capability | Current evidence |
 |---|---|
-| Application and AI safety | Unit tests and golden incident evaluations run in GitHub Actions |
+| Application and AI safety | Unit tests and four golden scenarios, including prompt injection and insufficient evidence, run in GitHub Actions |
 | Container security | Image build and Trivy vulnerability scan run in GitHub Actions |
 | Platform validation | Terraform validation, Helm linting, and IaC scanning run in GitHub Actions |
 | Local demonstration | Deterministic provider supports a credential-free, reproducible walkthrough |
 | AWS demonstration | Infrastructure and guarded deploy/destroy workflows are implemented; deployment evidence is not yet published |
 
-The repository was publicly released as a portfolio case study. Public commit dates represent the publication and subsequent improvement history. See [CHANGELOG.md](CHANGELOG.md), [ROADMAP.md](ROADMAP.md), and the [architecture decisions](docs/adr/README.md).
+See [CHANGELOG.md](CHANGELOG.md), [ROADMAP.md](ROADMAP.md), and the [architecture decisions](docs/adr/README.md) for the implementation history and explicit trade-offs.
 
 ## What it demonstrates
 
 | Area | Implementation |
 |---|---|
-| AI reasoning | Amazon Bedrock Converse API with a provider-neutral model adapter |
+| AI reasoning | Amazon Bedrock Converse API with a versioned, provider-neutral decision contract |
 | RAG | Ranked retrieval over versioned runbooks with evidence citations |
 | Agent tooling | MCP server exposing bounded, read-only Kubernetes, Prometheus, deployment, and runbook tools |
 | Human governance | Policy engine, expiring HMAC approvals, allowlisted remediation types, simulation-first execution |
-| AI safety | Prompt-injection boundaries, structured outputs, evidence requirements, confidence thresholds, audit chain |
+| AI safety | Untrusted-input boundaries, structured hypotheses, citation checks, confidence thresholds, fail-closed provider behavior |
 | Reliability | Idempotent incident processing, health checks, timeouts, retries, dead-letter-ready event model |
 | Platform | Docker, Kubernetes, Helm, EKS, Terraform, GitHub OIDC, GitHub Actions, Argo CD |
-| Observability | Prometheus metrics and OpenTelemetry-ready tracing for latency, tokens, tool calls, denials, and approvals |
-| Quality | Unit tests plus golden incident evaluations for diagnosis, citations, and unsafe-action rejection |
+| Observability | Prometheus metrics for analysis latency, Bedrock tokens, policy denials, approvals, and remediation outcomes |
+| Quality | Unit tests plus golden evaluations for retrieval, citation validity, escalation, and unsafe-action rejection |
 
 ## Architecture
 
@@ -82,23 +82,32 @@ export AWS_REGION=us-east-1
 - AI and MCP diagnostic tools are read-only.
 - Retrieved documents are treated as untrusted data, never as instructions.
 - Every conclusion must cite retrieved or observed evidence.
+- The model returns concise hypotheses and verification steps, not hidden chain-of-thought.
 - Low-confidence reports recommend escalation rather than action.
+- Invalid model output or a Bedrock failure degrades to a non-mutating human escalation.
+- Policy code verifies the declared risk for every allowlisted action.
 - Mutating actions require policy approval and a user-supplied, short-lived approval token.
 - Real Kubernetes mutations are disabled by default; the portfolio demo uses a simulated executor.
 
 See [the architecture](docs/ARCHITECTURE.md), [security model](docs/SECURITY.md), and [evaluation strategy](docs/EVALUATION.md).
 
+## Deliberate limitations
+
+- Local storage, approvals, and the audit chain are in memory; DynamoDB and KMS-backed adapters are planned.
+- The bundled Kubernetes diagnostic is simulated. The MCP boundary is real, but live cluster readers are intentionally not enabled in the portfolio mode.
+- Prometheus metrics are implemented; OpenTelemetry traces and a published Grafana dashboard remain roadmap items.
+- AWS infrastructure and guarded deploy/destroy workflows are implemented, but no live AWS deployment evidence is claimed yet.
+
 ## Temporary AWS deployment
 
 The AWS environment is intentionally short-lived and billable. The deploy workflow provisions EKS, two EC2 workers, one NAT gateway, KMS keys, DynamoDB, SQS, S3, ECR, and Bedrock inference access. Destroy it immediately after recording the demonstration.
 
-1. Create the `sentinelops-ai-platform` GitHub repository and push `main`.
-2. Create the `sentinelops-github-bootstrap` CloudFormation stack from `bootstrap/aws-oidc-role.yaml`.
-3. Create a protected GitHub environment named `demo`.
-4. Add repository variables `AWS_ROLE_ARN`, `AWS_REGION`, `TF_STATE_BUCKET`, and `BEDROCK_MODEL_ID`.
-5. Confirm CI is green, then manually run `Deploy AWS Demo` with `DEPLOY`.
-6. Follow [the demonstration runbook](docs/DEMO.md).
-7. Run `Destroy AWS Demo` with `DESTROY` and remove the bootstrap stack when finished.
+1. Create the `sentinelops-github-bootstrap` CloudFormation stack from `bootstrap/aws-oidc-role.yaml`.
+2. Create a protected GitHub environment named `demo`.
+3. Add repository variables `AWS_ROLE_ARN`, `AWS_REGION`, `TF_STATE_BUCKET`, and `BEDROCK_MODEL_ID`.
+4. Confirm CI is green, then manually run `Deploy AWS Demo` with `DEPLOY`.
+5. Follow [the demonstration runbook](docs/DEMO.md).
+6. Run `Destroy AWS Demo` with `DESTROY` and remove the bootstrap stack when finished.
 
 ## Portfolio story
 

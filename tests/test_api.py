@@ -45,6 +45,9 @@ def test_health_and_analysis_endpoints() -> None:
             assert response.status_code == 200
             recommendation = response.json()["analysis"]["recommendations"][0]
             assert recommendation["requires_approval"] is True
+            hypothesis = response.json()["analysis"]["hypotheses"][0]
+            assert hypothesis["evidence_ids"]
+            assert hypothesis["test_next"]
 
             audit = await client.get("/v1/audit")
             assert audit.status_code == 200

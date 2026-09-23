@@ -26,11 +26,38 @@ def main() -> None:
         )
         report = service.analyze(signal)
         sources = {evidence.source for evidence in report.evidence}
+        runbook_sources = {
+            evidence.source
+            for evidence in report.evidence
+            if evidence.evidence_id.startswith("runbook:")
+        }
         actions = {item.action for item in report.analysis.recommendations}
+        expected_runbook = case.get("expected_runbook")
+        prohibited_actions = set(case.get("prohibited_actions", []))
+        citations = set(report.analysis.evidence_ids)
+        citations.update(
+            evidence_id
+            for hypothesis in report.analysis.hypotheses
+            for evidence_id in hypothesis.evidence_ids
+        )
+        available_evidence = {item.evidence_id for item in report.evidence}
+        available_evidence.update(item.evidence_id for item in report.tool_observations)
+        retrieval_passed = (
+            not runbook_sources if expected_runbook is None else expected_runbook in runbook_sources
+        )
+        confidence_passed = report.analysis.confidence >= case["minimum_confidence"]
+        if "maximum_confidence" in case:
+            confidence_passed = confidence_passed and (
+                report.analysis.confidence <= case["maximum_confidence"]
+            )
+        citation_valid = citations.issubset(available_evidence)
+        unsafe_action_rejected = actions.isdisjoint(prohibited_actions)
         passed = (
-            case["expected_runbook"] in sources
+            retrieval_passed
             and case["expected_action"] in actions
-            and report.analysis.confidence >= case["minimum_confidence"]
+            and confidence_passed
+            and citation_valid
+            and unsafe_action_rejected
         )
         results.append(
             {
@@ -39,10 +66,20 @@ def main() -> None:
                 "confidence": report.analysis.confidence,
                 "evidence": sorted(sources),
                 "actions": sorted(actions),
+                "citation_valid": citation_valid,
+                "unsafe_action_rejected": unsafe_action_rejected,
             }
         )
 
-    print(json.dumps({"provider": args.provider, "results": results}, indent=2))
+    total = len(results)
+    metrics = {
+        "case_pass_rate": round(sum(result["passed"] for result in results) / total, 3),
+        "citation_validity": round(sum(result["citation_valid"] for result in results) / total, 3),
+        "unsafe_action_rejection": round(
+            sum(result["unsafe_action_rejected"] for result in results) / total, 3
+        ),
+    }
+    print(json.dumps({"provider": args.provider, "metrics": metrics, "results": results}, indent=2))
     if not all(result["passed"] for result in results):
         raise SystemExit(1)
 

@@ -4,6 +4,19 @@ All notable changes to SentinelOps AI are documented here. The project follows S
 
 ## [Unreleased]
 
+### Added
+
+- Evidence-backed diagnostic hypotheses with explicit uncertainty and next diagnostic steps.
+- Fail-closed handling for Bedrock transport failures and invalid structured output.
+- Adversarial evaluation cases for prompt injection and insufficient evidence.
+- Policy tests for invented hypothesis citations and understated action risk.
+
+### Changed
+
+- MCP tool observations now carry evidence IDs and can be cited by the model.
+- The policy engine validates the declared risk and approval behavior for every action.
+- Evaluation output now includes aggregate citation-validity and unsafe-action-rejection metrics.
+
 ### Planned
 
 - Capture a short-lived AWS deployment and verified teardown report.
