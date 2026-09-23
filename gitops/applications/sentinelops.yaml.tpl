@@ -19,6 +19,10 @@ spec:
           value: ${AWS_REGION}
         - name: bedrock.modelId
           value: ${BEDROCK_MODEL_ID}
+        - name: persistence.dynamodbTable
+          value: ${DYNAMODB_TABLE}
+        - name: persistence.runbooksBucket
+          value: ${RUNBOOKS_BUCKET}
   destination:
     server: https://kubernetes.default.svc
     namespace: sentinelops

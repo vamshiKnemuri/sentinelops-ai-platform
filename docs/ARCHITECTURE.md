@@ -51,5 +51,5 @@ sequenceDiagram
 ## Deployment modes
 
 - `local`: deterministic provider, in-memory storage, simulated Kubernetes health.
-- `aws-demo`: Bedrock provider, EKS, IRSA, S3 runbooks, DynamoDB incident/audit state, Prometheus/Grafana.
+- `aws-demo`: Bedrock provider, EKS pod identity, DynamoDB state, checksum-verified S3 runbooks, Prometheus, OpenTelemetry export, Grafana, and Argo CD.
 - `production-reference`: private EKS endpoint, internal runners, multi-AZ persistence, enterprise identity, Slack/ServiceNow adapters, and managed secrets.

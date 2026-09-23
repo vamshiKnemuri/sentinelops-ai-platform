@@ -32,7 +32,7 @@ See [CHANGELOG.md](CHANGELOG.md), [ROADMAP.md](ROADMAP.md), and the [architectur
 | AI safety | Untrusted-input boundaries, structured hypotheses, citation checks, confidence thresholds, fail-closed provider behavior |
 | Reliability | Idempotent incident processing, health checks, timeouts, retries, dead-letter-ready event model |
 | Platform | Docker, Kubernetes, Helm, EKS, Terraform, GitHub OIDC, GitHub Actions, Argo CD |
-| Observability | Prometheus metrics for analysis latency, Bedrock tokens, policy denials, approvals, and remediation outcomes |
+| Observability | Prometheus metrics, allowlisted OpenTelemetry spans, and a versioned Grafana dashboard |
 | Quality | Unit tests plus golden evaluations for retrieval, citation validity, escalation, and unsafe-action rejection |
 
 ## Architecture
@@ -91,11 +91,13 @@ export AWS_REGION=us-east-1
 
 See [the architecture](docs/ARCHITECTURE.md), [security model](docs/SECURITY.md), and [evaluation strategy](docs/EVALUATION.md).
 
+Durable AWS mode uses conditional DynamoDB writes for incidents, approvals, replay protection, and the audit chain, plus checksum-verified S3 runbooks. See [persistence](docs/PERSISTENCE.md) and [observability](docs/OBSERVABILITY.md).
+
 ## Deliberate limitations
 
-- Local storage, approvals, and the audit chain are in memory; DynamoDB and KMS-backed adapters are planned.
+- Local mode intentionally uses in-memory storage; AWS mode selects the DynamoDB and S3 adapters through environment configuration.
 - The bundled Kubernetes diagnostic is simulated. The MCP boundary is real, but live cluster readers are intentionally not enabled in the portfolio mode.
-- Prometheus metrics are implemented; OpenTelemetry traces and a published Grafana dashboard remain roadmap items.
+- Trace export is opt-in and requires an OTLP endpoint; trace attributes are allowlisted and never include incident payloads or credentials.
 - AWS infrastructure and guarded deploy/destroy workflows are implemented, but no live AWS deployment evidence is claimed yet.
 
 ## Temporary AWS deployment

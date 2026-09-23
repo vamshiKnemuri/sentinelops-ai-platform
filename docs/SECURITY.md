@@ -20,11 +20,14 @@
 - Secrets and raw credentials are excluded from prompts and audit payloads.
 - Provider failures and invalid model output become an audited, non-mutating human escalation.
 - Every accepted model decision records provider, confidence, citations, and audit hash.
+- DynamoDB conditional writes prevent incident duplication and approval-token replay across replicas.
+- S3 runbooks require a matching SHA-256 object metadata value before indexing.
+- OpenTelemetry attributes use a fixed allowlist; alert text, runbook content, identities, tokens, and credentials are excluded.
 
 ## Production hardening
 
 - Replace the HMAC demo signer with enterprise identity and a KMS-backed signing workflow.
-- Persist audit events to a write-restricted DynamoDB table and archive to S3 Object Lock.
+- Archive DynamoDB audit events to an S3 Object Lock retention bucket.
 - Use private cluster endpoints and controlled runners.
 - Add Bedrock Guardrails for sensitive-information filters and denied topics.
 - Apply NetworkPolicy, Pod Security Standards, image signing, admission policy, and egress controls.

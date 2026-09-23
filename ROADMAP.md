@@ -17,10 +17,13 @@ This roadmap separates implemented capability from planned engineering work. It 
 The current `main` branch also includes the next decision-contract iteration: cited diagnostic hypotheses, explicit uncertainty, fail-closed model handling, and adversarial evaluation cases. These remain unreleased until the next version is tagged.
 
 - Run the short-lived AWS demonstration and publish redacted deployment and teardown evidence.
-- Implement durable DynamoDB incident and approval storage.
-- Store versioned runbooks in S3 with ingestion checksums.
-- Export OpenTelemetry traces and publish a Grafana dashboard.
 - Add fault-injection and recovery-time evaluation scenarios.
+
+## Completed on main after v0.1.0
+
+- Durable DynamoDB incident, approval, replay, and transactional audit storage.
+- Versioned S3 runbooks with SHA-256 ingestion validation.
+- OpenTelemetry spans with an attribute allowlist and a versioned Grafana dashboard.
 
 ## Later
 

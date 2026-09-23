@@ -40,6 +40,18 @@ spec:
               value: {{ .Values.bedrock.modelId | quote }}
             - name: AWS_REGION
               value: {{ .Values.bedrock.region | quote }}
+            {{ if .Values.persistence.dynamodbTable }}
+            - name: SENTINELOPS_DYNAMODB_TABLE
+              value: {{ .Values.persistence.dynamodbTable | quote }}
+            {{ end }}
+            {{ if .Values.persistence.runbooksBucket }}
+            - name: SENTINELOPS_RUNBOOKS_BUCKET
+              value: {{ .Values.persistence.runbooksBucket | quote }}
+            {{ end }}
+            {{ if .Values.tracing.otlpEndpoint }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.tracing.otlpEndpoint | quote }}
+            {{ end }}
             - name: SENTINELOPS_APPROVAL_SECRET
               valueFrom:
                 secretKeyRef:

@@ -94,19 +94,33 @@ resource "aws_s3_object" "runbooks" {
   bucket                 = aws_s3_bucket.runbooks.id
   key                    = "runbooks/${each.value}"
   source                 = "${path.root}/../../knowledge/runbooks/${each.value}"
-  etag                   = filemd5("${path.root}/../../knowledge/runbooks/${each.value}")
+  source_hash            = filesha256("${path.root}/../../knowledge/runbooks/${each.value}")
   server_side_encryption = "aws:kms"
   kms_key_id             = aws_kms_key.data.arn
+  metadata = {
+    sha256 = filesha256("${path.root}/../../knowledge/runbooks/${each.value}")
+  }
 }
 
 resource "aws_dynamodb_table" "incidents" {
   name         = "${local.name}-incidents"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "incident_id"
+  hash_key     = "pk"
+  range_key    = "sk"
 
   attribute {
-    name = "incident_id"
+    name = "pk"
     type = "S"
+  }
+
+  attribute {
+    name = "sk"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "ttl_epoch"
+    enabled        = true
   }
 
   point_in_time_recovery {
@@ -183,9 +197,15 @@ resource "aws_iam_role_policy" "agent" {
         Resource = [aws_s3_bucket.runbooks.arn, "${aws_s3_bucket.runbooks.arn}/*"]
       },
       {
-        Sid      = "IncidentState"
-        Effect   = "Allow"
-        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:Query"]
+        Sid    = "IncidentState"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:Query",
+          "dynamodb:TransactWriteItems"
+        ]
         Resource = aws_dynamodb_table.incidents.arn
       },
       {

@@ -10,6 +10,10 @@ output "runbooks_bucket" {
   value = aws_s3_bucket.runbooks.id
 }
 
+output "incidents_table" {
+  value = aws_dynamodb_table.incidents.name
+}
+
 output "incident_queue_url" {
   value = aws_sqs_queue.incidents.url
 }
