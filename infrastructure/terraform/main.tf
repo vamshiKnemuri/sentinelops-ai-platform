@@ -97,7 +97,7 @@ resource "aws_s3_object" "runbooks" {
   source_hash            = filesha256("${path.root}/../../knowledge/runbooks/${each.value}")
   server_side_encryption = "aws:kms"
   kms_key_id             = aws_kms_key.data.arn
-  metadata = {
+  metadata               = {
     sha256 = filesha256("${path.root}/../../knowledge/runbooks/${each.value}")
   }
 }
@@ -199,7 +199,7 @@ resource "aws_iam_role_policy" "agent" {
       {
         Sid      = "IncidentState"
         Effect   = "Allow"
-        Action = [
+        Action   = [
           "dynamodb:GetItem",
           "dynamodb:PutItem",
           "dynamodb:UpdateItem",
