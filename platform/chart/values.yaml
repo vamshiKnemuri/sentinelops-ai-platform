@@ -9,6 +9,13 @@ bedrock:
   modelId: amazon.nova-lite-v1:0
   region: us-east-1
 
+persistence:
+  dynamodbTable: ""
+  runbooksBucket: ""
+
+tracing:
+  otlpEndpoint: ""
+
 service:
   port: 80
   targetPort: 8080

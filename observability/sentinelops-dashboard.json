@@ -1,0 +1,69 @@
+{
+  "annotations": {"list": []},
+  "editable": false,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "id": 1,
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(sentinelops_analysis_seconds_bucket[5m])) by (le))", "legendFormat": "p95"}],
+      "title": "Analysis latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 2,
+      "targets": [{"expr": "sum by (severity, provider) (rate(sentinelops_incidents_total[5m]))", "legendFormat": "{{severity}} / {{provider}}"}],
+      "title": "Incident analysis rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+      "id": 3,
+      "targets": [{"expr": "sum(increase(sentinelops_policy_denials_total[1h]))", "legendFormat": "denials"}],
+      "title": "Policy denials (1h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+      "id": 4,
+      "targets": [{"expr": "sum by (action) (increase(sentinelops_approvals_total[1h]))", "legendFormat": "{{action}}"}],
+      "title": "Approvals (1h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8},
+      "id": 5,
+      "targets": [{"expr": "sum by (action, status) (increase(sentinelops_remediations_total[1h]))", "legendFormat": "{{action}} / {{status}}"}],
+      "title": "Remediation outcomes (1h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+      "id": 6,
+      "targets": [{"expr": "sum by (direction, model) (rate(sentinelops_bedrock_tokens_total[5m]))", "legendFormat": "{{model}} / {{direction}}"}],
+      "title": "Bedrock token rate",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["sentinelops", "sre", "ai"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "timezone": "browser",
+  "title": "SentinelOps AI Control Plane",
+  "uid": "sentinelops-ai",
+  "version": 1
+}

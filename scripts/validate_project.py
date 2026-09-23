@@ -17,6 +17,10 @@ REQUIRED_FILES = [
     "src/sentinelops/mcp_server.py",
     "src/sentinelops/policy.py",
     "src/sentinelops/remediation.py",
+    "src/sentinelops/observability.py",
+    "docs/PERSISTENCE.md",
+    "docs/OBSERVABILITY.md",
+    "observability/sentinelops-dashboard.json",
     "knowledge/runbooks/crashloop.md",
     "infrastructure/terraform/main.tf",
     "platform/chart/templates/deployment.yaml",
@@ -89,6 +93,23 @@ def main() -> None:
     ):
         fail("golden evaluation dataset is incomplete")
 
+    dashboard = json.loads(
+        (ROOT / "observability/sentinelops-dashboard.json").read_text(encoding="utf-8")
+    )
+    panels = dashboard.get("panels", [])
+    panel_ids = [panel.get("id") for panel in panels]
+    if dashboard.get("uid") != "sentinelops-ai" or len(panels) < 6:
+        fail("Grafana dashboard is missing its stable UID or required panels")
+    if len(panel_ids) != len(set(panel_ids)):
+        fail("Grafana dashboard contains duplicate panel IDs")
+    if not all(target.get("expr") for panel in panels for target in panel.get("targets", [])):
+        fail("Grafana dashboard contains a target without a Prometheus expression")
+
+    observability = (ROOT / "src/sentinelops/observability.py").read_text(encoding="utf-8")
+    for forbidden_attribute in ["alert.summary", "approval.token", "aws.access_key"]:
+        if f'"{forbidden_attribute}",' in observability:
+            fail(f"unsafe trace attribute is allowlisted: {forbidden_attribute}")
+
     combined = "\n".join(
         path.read_text(encoding="utf-8", errors="ignore")
         for path in ROOT.rglob("*")
@@ -105,7 +126,8 @@ def main() -> None:
 
     print(
         f"Validated {len(REQUIRED_FILES)} required files, {len(YAML_FILES)} YAML files, "
-        "CloudFormation structure, evaluation data, secret patterns, and workload controls."
+        "CloudFormation structure, evaluation data, dashboard structure, trace attributes, "
+        "secret patterns, and workload controls."
     )
 
 

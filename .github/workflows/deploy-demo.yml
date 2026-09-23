@@ -70,6 +70,8 @@ jobs:
         run: |
           echo "cluster=$(terraform output -raw cluster_name)" >> "$GITHUB_OUTPUT"
           echo "ecr=$(terraform output -raw ecr_repository_url)" >> "$GITHUB_OUTPUT"
+          echo "table=$(terraform output -raw incidents_table)" >> "$GITHUB_OUTPUT"
+          echo "runbooks=$(terraform output -raw runbooks_bucket)" >> "$GITHUB_OUTPUT"
 
       - uses: aws-actions/amazon-ecr-login@v2
 
@@ -108,7 +110,18 @@ jobs:
           GITOPS_REPO_URL: https://github.com/${{ github.repository }}.git
           IMAGE_REPOSITORY: ${{ steps.infra.outputs.ecr }}
           IMAGE_TAG: ${{ github.sha }}
+          DYNAMODB_TABLE: ${{ steps.infra.outputs.table }}
+          RUNBOOKS_BUCKET: ${{ steps.infra.outputs.runbooks }}
         run: envsubst < gitops/applications/sentinelops.yaml.tpl | kubectl apply -f -
+
+      - name: Install the versioned Grafana dashboard
+        run: |
+          kubectl create configmap sentinelops-dashboard \
+            --namespace monitoring \
+            --from-file=sentinelops.json=observability/sentinelops-dashboard.json \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl label configmap sentinelops-dashboard \
+            --namespace monitoring grafana_dashboard=1 --overwrite
 
       - name: Verify rollout and AI health
         run: |

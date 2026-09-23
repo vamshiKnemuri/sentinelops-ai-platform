@@ -2,6 +2,10 @@ grafana:
   service:
     type: ClusterIP
   defaultDashboardsEnabled: true
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
 
 prometheus:
   prometheusSpec:

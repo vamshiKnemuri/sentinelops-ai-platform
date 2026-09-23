@@ -7,6 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from sentinelops.models import IncidentSignal, ToolObservation
+from sentinelops.observability import traced
 
 
 @dataclass(frozen=True)
@@ -30,7 +31,11 @@ class ToolRegistry:
         observations: list[ToolObservation] = []
         for tool in self._tools.values():
             try:
-                observations.append(tool.handler(signal))
+                with traced(
+                    "sentinelops.tool.execute",
+                    **{"tool.name": tool.name, "service.name": signal.service},
+                ):
+                    observations.append(tool.handler(signal))
             except Exception as exc:  # noqa: BLE001 - tool failures become bounded evidence
                 observations.append(
                     ToolObservation(

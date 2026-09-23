@@ -10,18 +10,21 @@ All notable changes to SentinelOps AI are documented here. The project follows S
 - Fail-closed handling for Bedrock transport failures and invalid structured output.
 - Adversarial evaluation cases for prompt injection and insufficient evidence.
 - Policy tests for invented hypothesis citations and understated action risk.
+- DynamoDB incident, approval, replay, and transactional audit adapters.
+- Checksum-verified S3 runbook loading.
+- Allowlisted OpenTelemetry spans and a versioned Grafana dashboard.
 
 ### Changed
 
 - MCP tool observations now carry evidence IDs and can be cited by the model.
 - The policy engine validates the declared risk and approval behavior for every action.
 - Evaluation output now includes aggregate citation-validity and unsafe-action-rejection metrics.
+- AWS mode now selects durable persistence through Terraform outputs and Helm values.
 
 ### Planned
 
 - Capture a short-lived AWS deployment and verified teardown report.
-- Add durable DynamoDB and S3 adapters behind the existing storage interfaces.
-- Add OpenTelemetry traces and a versioned Grafana dashboard.
+- Capture trace and dashboard evidence from the short-lived AWS demo.
 
 ## [0.1.0] - 2026-09-18
 
