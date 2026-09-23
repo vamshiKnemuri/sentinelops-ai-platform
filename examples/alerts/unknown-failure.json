@@ -1,0 +1,9 @@
+{
+  "source": "prometheus-alertmanager",
+  "title": "ZXQ999",
+  "service": "zxq-component",
+  "environment": "production",
+  "severity": "warning",
+  "summary": "ZXQ999 ZXQUNKNOWN ZXQUNCLASSIFIED",
+  "labels": {}
+}

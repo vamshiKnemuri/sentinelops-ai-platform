@@ -34,6 +34,7 @@ class ToolRegistry:
             except Exception as exc:  # noqa: BLE001 - tool failures become bounded evidence
                 observations.append(
                     ToolObservation(
+                        evidence_id=f"tool:{tool.name}",
                         tool=tool.name,
                         summary="Tool was unavailable; analysis continued with remaining evidence.",
                         data={"error_type": type(exc).__name__},
@@ -44,6 +45,7 @@ class ToolRegistry:
 
 def simulated_kubernetes_health(signal: IncidentSignal) -> ToolObservation:
     return ToolObservation(
+        evidence_id="tool:kubernetes_workload_health",
         tool="kubernetes_workload_health",
         summary=f"Collected read-only workload health for {signal.service}.",
         data={"service": signal.service, "namespace": signal.labels.get("namespace", "default")},

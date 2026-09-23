@@ -14,6 +14,8 @@ This roadmap separates implemented capability from planned engineering work. It 
 
 ## Next
 
+The current `main` branch also includes the next decision-contract iteration: cited diagnostic hypotheses, explicit uncertainty, fail-closed model handling, and adversarial evaluation cases. These remain unreleased until the next version is tagged.
+
 - Run the short-lived AWS demonstration and publish redacted deployment and teardown evidence.
 - Implement durable DynamoDB incident and approval storage.
 - Store versioned runbooks in S3 with ingestion checksums.

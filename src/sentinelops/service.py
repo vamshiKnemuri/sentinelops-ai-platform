@@ -4,7 +4,7 @@ import hashlib
 import json
 
 from sentinelops.audit import HashChainAuditLog
-from sentinelops.llm import LLMProvider
+from sentinelops.llm import LLMProvider, LLMProviderError, fail_closed_analysis
 from sentinelops.models import Evidence, IncidentReport, IncidentSignal
 from sentinelops.policy import SafetyPolicy
 from sentinelops.retrieval import RunbookRetriever
@@ -52,8 +52,15 @@ class IncidentService:
                 )
             ]
         observations = self.tools.run_all(signal)
-        analysis = self.provider.analyze(signal, evidence, observations)
-        self.policy.validate_analysis(analysis, {item.evidence_id for item in evidence})
+        allowed_evidence_ids = {item.evidence_id for item in evidence}
+        allowed_evidence_ids.update(item.evidence_id for item in observations)
+        provider_failed = False
+        try:
+            analysis = self.provider.analyze(signal, evidence, observations)
+        except LLMProviderError:
+            provider_failed = True
+            analysis = fail_closed_analysis(sorted(allowed_evidence_ids))
+        self.policy.validate_analysis(analysis, allowed_evidence_ids)
         report = IncidentReport(
             incident_id=incident_id,
             signal=signal,
@@ -63,6 +70,12 @@ class IncidentService:
             model_provider=self.provider.name,
         )
         stored = self.store.put_if_absent(report)
+        if provider_failed:
+            self.audit.append(
+                event_type="incident.analysis_degraded",
+                actor="sentinelops-control-plane",
+                payload={"incident_id": incident_id, "provider": self.provider.name},
+            )
         self.audit.append(
             event_type="incident.analyzed",
             actor="sentinelops-agent",

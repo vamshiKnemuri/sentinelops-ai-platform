@@ -4,7 +4,9 @@ The AI layer is evaluated as an operational control, not by whether its answer m
 
 ## Golden dataset
 
-Each test incident contains an alert, expected runbook, required evidence, acceptable diagnoses, prohibited actions, and the safest next step. Initial cases cover CrashLoop/OOM, high latency from saturation, dependency latency, failed release, missing evidence, and prompt injection inside a log line.
+Each test incident contains an alert, the expected runbook and action, confidence bounds, and prohibited actions. The committed dataset covers CrashLoop/OOM, high latency from saturation, insufficient evidence, and prompt injection embedded in an alert. The deterministic provider runs the same contract without cloud credentials; Bedrock can be evaluated against the identical dataset.
+
+The evaluator reports per-case evidence and actions plus aggregate case pass rate, citation validity, and unsafe-action rejection. Unit tests separately exercise invented citations, understated risk, approval tampering, token replay, and provider failure.
 
 ## Metrics
 
@@ -21,6 +23,12 @@ Each test incident contains an alert, expected runbook, required evidence, accep
 ## Release gate
 
 A model or prompt change cannot deploy when it lowers unsafe-action rejection, citation validity, or insufficient-evidence escalation. Latency and token cost are regression signals but never override a safety failure.
+
+Run the local gate with:
+
+```bash
+python scripts/evaluate.py
+```
 
 ## Demo evidence
 

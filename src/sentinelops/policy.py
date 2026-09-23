@@ -29,7 +29,13 @@ class SafetyPolicy:
     }
 
     def validate_analysis(self, analysis: AnalysisResult, evidence_ids: set[str]) -> None:
-        if not set(analysis.evidence_ids).issubset(evidence_ids):
+        cited_ids = set(analysis.evidence_ids)
+        cited_ids.update(
+            evidence_id
+            for hypothesis in analysis.hypotheses
+            for evidence_id in hypothesis.evidence_ids
+        )
+        if not cited_ids.issubset(evidence_ids):
             raise PolicyViolation("analysis cited evidence that was not retrieved")
         if analysis.confidence < 0.65:
             for recommendation in analysis.recommendations:
@@ -38,11 +44,22 @@ class SafetyPolicy:
         for recommendation in analysis.recommendations:
             if recommendation.action not in self.ALLOWED_ACTIONS:
                 raise PolicyViolation(f"action is not allowlisted: {recommendation.action}")
+            expected_risk = self.ALLOWED_ACTIONS[recommendation.action]
+            if recommendation.risk != expected_risk:
+                raise PolicyViolation(
+                    f"action risk must be {expected_risk}: {recommendation.action}"
+                )
             if (
                 recommendation.action != "escalate_to_human"
                 and not recommendation.requires_approval
             ):
                 raise PolicyViolation("mutating recommendations must require approval")
+            if recommendation.action == "escalate_to_human" and recommendation.requires_approval:
+                raise PolicyViolation("human escalation must not require remediation approval")
+
+        actions = [item.action for item in analysis.recommendations]
+        if len(actions) != len(set(actions)):
+            raise PolicyViolation("analysis contains duplicate recommendations")
 
 
 class ApprovalSigner:

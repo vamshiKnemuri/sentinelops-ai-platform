@@ -47,9 +47,7 @@ class CloudFormationLoader(yaml.SafeLoader):
     pass
 
 
-def cloudformation_tag(
-    loader: CloudFormationLoader, tag_suffix: str, node: yaml.Node
-) -> object:
+def cloudformation_tag(loader: CloudFormationLoader, tag_suffix: str, node: yaml.Node) -> object:
     if isinstance(node, yaml.ScalarNode):
         return {tag_suffix: loader.construct_scalar(node)}
     if isinstance(node, yaml.SequenceNode):
@@ -85,7 +83,10 @@ def main() -> None:
         fail("CloudFormation bootstrap is missing required resources")
 
     evaluation = json.loads((ROOT / "examples/evaluation.json").read_text(encoding="utf-8"))
-    if len(evaluation) < 2 or not all("expected_action" in case for case in evaluation):
+    if len(evaluation) < 4 or not all(
+        {"case_id", "alert_file", "expected_action", "prohibited_actions"}.issubset(case)
+        for case in evaluation
+    ):
         fail("golden evaluation dataset is incomplete")
 
     combined = "\n".join(
@@ -98,7 +99,7 @@ def main() -> None:
             fail(f"possible {name} detected")
 
     deployment = (ROOT / "platform/chart/templates/deployment.yaml").read_text()
-    for control in ["runAsNonRoot: true", "readOnlyRootFilesystem: true", "drop: [\"ALL\"]"]:
+    for control in ["runAsNonRoot: true", "readOnlyRootFilesystem: true", 'drop: ["ALL"]']:
         if control not in deployment:
             fail(f"Kubernetes deployment is missing control: {control}")
 

@@ -13,12 +13,13 @@
 
 - The system prompt defines retrieved content as untrusted data.
 - The model receives only bounded evidence and read-only observations.
-- Output is parsed into a strict schema and all evidence IDs are checked.
-- Only four action types are recognized; mutating proposals always require approval.
+- Output is parsed into a strict schema and citations on both the diagnosis and hypotheses are checked.
+- Only four action types are recognized; declared action risk must match policy and mutating proposals always require approval.
 - Approval tokens are signed, expire, and bind the incident, action, and approver.
 - Real execution is disabled by default and uses a separate identity when enabled.
 - Secrets and raw credentials are excluded from prompts and audit payloads.
-- Every model decision records provider, confidence, citations, policy result, and audit hash.
+- Provider failures and invalid model output become an audited, non-mutating human escalation.
+- Every accepted model decision records provider, confidence, citations, and audit hash.
 
 ## Production hardening
 

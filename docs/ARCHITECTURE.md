@@ -33,8 +33,8 @@ sequenceDiagram
 |---|---|
 | Alert input | Pydantic schemas, size limits, controlled label count |
 | Retrieved text | Delimited as untrusted evidence; cannot define tools or permissions |
-| MCP tools | Read-only registry; bounded parameters and timeouts |
-| LLM output | Strict schema validation, citation validation, action allowlist |
+| MCP tools | Read-only registry; bounded parameters and explicit evidence IDs |
+| LLM output | Versioned schema, cited hypotheses, uncertainty, action and risk validation |
 | Remediation | Separate approval token tied to incident, action, identity, and expiry |
 | Audit | Hash-linked events; production adapter persists immutable records |
 | AWS | Pod identity/IRSA and least-privilege Bedrock permissions |
@@ -44,6 +44,7 @@ sequenceDiagram
 - A failed diagnostic tool becomes an explicit bounded observation; other evidence remains usable.
 - Missing retrieval results force original-signal evidence and lower-confidence escalation.
 - Invalid model JSON, invented citations, or unsafe actions fail closed.
+- Bedrock transport or schema failures become an audited degraded analysis that can only escalate.
 - Duplicate alerts map to the same incident identity and do not duplicate analysis side effects.
 - The deterministic provider supports local development and repeatable evaluation; it is never presented as live AI.
 
